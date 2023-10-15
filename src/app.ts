@@ -7,7 +7,7 @@ import Socket from './services/socket';
 class App {
   public app: express.Application;
 
-  public port = process.env.PORT;
+  public port = process.env.PORT ?? 4000;
 
   public server: Server;
 

@@ -1,7 +1,7 @@
 {
   "name": "chat-be",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple session chat",
   "main": "index.js",
   "scripts": {
     "start": "ts-node ./src/index.ts",
