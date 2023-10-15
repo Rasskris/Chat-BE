@@ -1,12 +1,15 @@
 import { Server, Socket as SocketType } from 'socket.io';
 import { Server as HttpServer } from 'http';
+import uniqBy from 'lodash/uniqBy';
+
+import User from '../types/user';
 
 class Socket {
   public socketServer: Server;
 
   public httpServer: HttpServer;
 
-  private sockets: Record<string, unknown>;
+  private users: User[] = [];
 
   constructor(httpServer: HttpServer) {
     this.httpServer = httpServer;
@@ -21,27 +24,27 @@ class Socket {
     this.socketServer.on('connection', this.connection);
   }
 
-  private connection(socket: SocketType) {
-    const { userId } = socket.handshake.auth;
-
-    this.sockets[userId] = socket;
-  
-    socket.on('join', (gameId) =>  {
-      this.join(socket, gameId);
+  private connection = (socket: SocketType) => {
+    socket.on('join', (data) => {
+      this.users = uniqBy([...this.users, data], 'id');
+      this.socketServer.emit('join', this.users);
     });
-  
+
+    socket.on('leave', () => {
+      this.users = this.users.filter((user) => user.id !== socket.id);
+      this.socketServer.emit('leave', this.users);
+    });
+
+    socket.on('message', data => {
+      this.socketServer.emit('message', data);
+    });
+
     socket.on('disconnect', () => {
-      delete this.sockets[userId];
+      this.users = this.users.filter((user) => user.id !== socket.id);
+      this.socketServer.emit('leave', this.users);
+      socket.disconnect();
     });
-  }
-
-  private join(socket: SocketType, gameId: string){
-    socket.join(gameId);
-  }
-  
-  private leave(socket: SocketType, gameId: string) {
-    socket.leave(gameId);
-  }
+  };
 }
 
 export default Socket;
